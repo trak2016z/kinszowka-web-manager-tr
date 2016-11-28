@@ -1,3 +1,14 @@
+== 0.0.2
+- Dodano wtyczkê 'Peter's Login Redirect' - do odpowiedniego przekierowania u¿ytkowników.
+- Dodano wtyczkê 'rename-wp-admin.php' - do ³adniejszego adresu loginu.
+- Dodano wtyczkê 'User Role Editor' - do zarz¹dzania uprawnieniami roli u¿ytkoników.
+- Dodano wtyczkê 'Redirect to login if not logged in' - do przekierowani anonimowego u¿ytkownika na stronê logowania.
+- Dodano wtyczkê 'Restricted Conten' - do ustawiania uprawnieni podstron w zale¿noœci od roli u¿ytkownika.
+- Ustawiono stronê, aby uruchamia³a siê bezpoœrednio z adresu (bez subfolderu).
+- Ustawiono stronê, aby tylko zarejestrowany u¿ytkownik mia³ dostêp.
+- Przygotowano menu i podstrony.
+- Zaktualizowane dokumentacjê.
+
 == 0.0.1
  - Dodanie plików projektu
  - Instalacja wordpress

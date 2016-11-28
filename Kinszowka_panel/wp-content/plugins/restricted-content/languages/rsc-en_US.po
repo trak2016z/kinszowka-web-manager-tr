@@ -1,0 +1,265 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2016-10-06 13:05+0200\n"
+"PO-Revision-Date: 2016-10-06 13:13+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.9\n"
+"X-Poedit-Basepath: ..\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-KeywordsList: _e;__;_n;__ngettext_noop;_n_noop;_x;_nx;_nx_noop;_ex;"
+"esc_attr__;esc_attr_e;esc_attr_x;esc_html__;esc_html_e;esc_html_x;_c;_nc\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: includes/admin-settings.php:10
+msgid "Restrict Content Messages"
+msgstr ""
+
+#: includes/admin-settings.php:17
+msgid "Options saved"
+msgstr ""
+
+#: includes/admin-settings.php:29
+msgid "General"
+msgstr ""
+
+#: includes/admin-settings.php:35
+msgid "Logged In"
+msgstr ""
+
+#: includes/admin-settings.php:37
+msgid "You must log in to view this content."
+msgstr ""
+
+#: includes/admin-settings.php:38
+msgid "Message displayed when a user is not logged in and can't view content."
+msgstr ""
+
+#: includes/admin-settings.php:43
+msgid "User Role"
+msgstr ""
+
+#: includes/admin-settings.php:45 includes/admin-settings.php:53 index.php:176
+#: index.php:197
+msgid "You don't have required permissions to view this content."
+msgstr ""
+
+#: includes/admin-settings.php:46
+msgid ""
+"Message displayed when a user does not have required user role to view "
+"restricted content."
+msgstr ""
+
+#: includes/admin-settings.php:51
+msgid "Capability"
+msgstr ""
+
+#: includes/admin-settings.php:54
+msgid ""
+"Message displayed when a user does not have required capability to view "
+"restricted content."
+msgstr ""
+
+#: includes/admin-settings.php:70
+msgid "Bridge for WooCommerce"
+msgstr ""
+
+#: includes/admin-settings.php:76
+#, php-format
+msgid ""
+"WARNING: In order to track user purchases, you'll need to set \"Force Login"
+"\" option in %s to YES."
+msgstr ""
+
+#: includes/admin-settings.php:76
+#, php-format
+msgid "%s Settings"
+msgstr ""
+
+#: includes/admin-settings.php:96
+msgid "Any Ticket Type"
+msgstr ""
+
+#: includes/admin-settings.php:98 index.php:212
+msgid ""
+"This content is restricted to the attendees only. Please purchase ticket(s) "
+"in order to access this content."
+msgstr ""
+
+#: includes/admin-settings.php:99
+msgid ""
+"Message displayed when a user didn't purchase any ticket and can't view "
+"restricted content."
+msgstr ""
+
+#: includes/admin-settings.php:107
+msgid "Specific Event"
+msgstr ""
+
+#: includes/admin-settings.php:109 index.php:222
+msgid ""
+"Only attendees who purchased ticket(s) for following event(s): "
+"[rsc_tc_event] can access this content."
+msgstr ""
+
+#: includes/admin-settings.php:110
+msgid ""
+"Message displayed when a user didn't purchase any ticket for a specific "
+"event and can't view restricted content. You can use <strong>[rsc_tc_event]</"
+"strong> placeholder for required event(s)."
+msgstr ""
+
+#: includes/admin-settings.php:116
+msgid "Specific Ticket Type"
+msgstr ""
+
+#: includes/admin-settings.php:118 index.php:240
+msgid ""
+"Only attendees who purchased following ticket type(s): [rsc_tc_ticket_type] "
+"can access this content."
+msgstr ""
+
+#: includes/admin-settings.php:119
+msgid ""
+"Message displayed when a user didn't purchase a specific ticket type and "
+"can't view restricted content. You can use <strong>[rsc_tc_ticket_type]</"
+"strong> placeholder for required ticket type(s)."
+msgstr ""
+
+#: includes/admin-settings.php:137
+msgid "WooCommerce"
+msgstr ""
+
+#: includes/admin-settings.php:151
+msgid "Any Product"
+msgstr ""
+
+#: includes/admin-settings.php:153 index.php:273
+msgid ""
+"This content is restricted to the clients only. Please purchase any product "
+"in order to access this content."
+msgstr ""
+
+#: includes/admin-settings.php:154
+msgid ""
+"Message displayed when a user didn't purchase any WooCommerce product and "
+"can't view restricted content."
+msgstr ""
+
+#: includes/admin-settings.php:159
+msgid "Specific Product"
+msgstr ""
+
+#: includes/admin-settings.php:161 index.php:284
+msgid ""
+"Only clients who purchased following product(s): [rsc_woo_product] can "
+"access this content."
+msgstr ""
+
+#: includes/admin-settings.php:162
+msgid ""
+"Message displayed when a user didn't purchase a specific product and can't "
+"view restricted content. You can use <strong>[rsc_woo_product]</strong> "
+"placeholder for required ticket type(s)."
+msgstr ""
+
+#: includes/admin-settings.php:176
+msgid "Save Settings"
+msgstr ""
+
+#: includes/admin-settings.php:194
+msgid "Restricted Content Settings"
+msgstr ""
+
+#: includes/admin-settings.php:194
+msgid "Restricted Content"
+msgstr ""
+
+#: index.php:68
+#, php-format
+msgid ""
+"There was an issue determining where %s is installed. Please reinstall it."
+msgstr ""
+
+#: index.php:73
+msgid "Settings"
+msgstr ""
+
+#: index.php:167
+msgid "You must log in to view this content"
+msgstr ""
+
+#: index.php:249
+msgid "event"
+msgstr ""
+
+#: index.php:663
+msgid "Content Available To"
+msgstr ""
+
+#: index.php:674
+msgid "Everyone"
+msgstr ""
+
+#: index.php:675
+msgid "Logged in users"
+msgstr ""
+
+#: index.php:676
+msgid "Users with specific role"
+msgstr ""
+
+#: index.php:677
+msgid "Users with specific capability"
+msgstr ""
+
+#: index.php:682
+#, php-format
+msgid "%s Users"
+msgstr ""
+
+#: index.php:687
+msgid "WooCommerce Users"
+msgstr ""
+
+#: index.php:755
+msgid "Select a User Role"
+msgstr ""
+
+#: index.php:773
+msgid "User Capability"
+msgstr ""
+
+#: index.php:784 index.php:862
+msgid "Who Purchased"
+msgstr ""
+
+#: index.php:785
+msgid "Any ticket type"
+msgstr ""
+
+#: index.php:790
+msgid "Any ticket type for a specific event"
+msgstr ""
+
+#: index.php:794
+msgid "Specific ticket type"
+msgstr ""
+
+#: index.php:843
+#, php-format
+msgid "Event ID: %s"
+msgstr ""
+
+#: index.php:863
+msgid "Any product"
+msgstr ""
+
+#: index.php:865
+msgid "Specific product"
+msgstr ""
