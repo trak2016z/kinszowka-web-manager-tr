@@ -1,0 +1,7 @@
+<?php
+	echo "Starting ffmpeg...\n\n";
+	echo shell_exec("ffmpeg -y -i audio-example-granade.wav -acodec libvorbis audio-example-granade.ogg <nul >nul 2>ffmpeg.log &");
+	echo "Done.\n";
+?>
+
+https://trac.ffmpeg.org/wiki/PHP
