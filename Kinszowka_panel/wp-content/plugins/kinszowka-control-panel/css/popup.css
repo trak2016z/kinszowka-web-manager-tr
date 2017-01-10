@@ -1,0 +1,65 @@
+.messagepop {
+ 
+  display:none;
+  position:absolute;
+  left: 50%;
+  width:1000px;
+  padding: 0px 0px 0px 96px;
+  z-index: 50;
+  
+}
+.messagepop .header
+{
+	border-top: none;
+	font-size: 200%;
+}
+label {
+  display: block;
+  margin-bottom: 3px;
+  padding-left: 15px;
+  text-indent: -15px;
+}
+.messagepop td
+{
+  text-align: center; 
+  vertical-align: middle;
+}
+.messagepop p
+{
+  border-top: 1px solid #EFEFEF;
+}
+.messagepop p, .messagepop.div {
+  margin: 8px 0;
+  padding-bottom: 8px;
+}
+.innermessage
+{
+	background-color:#FFFFFF;
+	border:1px solid #999999;
+	cursor:default;
+	text-align:left;
+	padding: 25px 25px 20px;
+	position: relative; 
+	left: -50%;
+}
+
+/* stars */
+.difficulty {
+  unicode-bidi: bidi-override;
+  direction: rtl;
+}
+.difficulty > span {
+  display: inline-block;
+  position: relative;
+  width: 20px;
+}
+.difficulty > span:hover:before,
+.difficulty > span:hover ~ span:before {
+   content: url(../resources/star-icon.png);
+   position: absolute;
+}
+/* upload */
+.upload_error
+{
+	color: red;
+}

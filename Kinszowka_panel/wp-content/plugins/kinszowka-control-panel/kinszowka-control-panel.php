@@ -11,6 +11,16 @@
 	
 	function kinszowk_control_panel_get_questions()
 	{
+		global $imageStarEmptyHTML;
+		
+		wp_register_script('popup-js',plugins_url( 'js/popup.js', __FILE__ ),array(),NULL,true);
+		wp_enqueue_script('popup-js');
+
+		$wnm_custom = array( 
+		'star_path' => plugins_url( 'resources/star-icon.png', __FILE__ ),
+		'star_empty_path' => plugins_url( 'resources/star-empty-icon.png', __FILE__ ));
+		wp_localize_script( 'popup-js', 'wnm_custom', $wnm_custom );
+	
 		//connecting to db
 		$connectResult = db_connect();
 		if ($connectResult!==true)
@@ -35,6 +45,7 @@
 		$cats = "-1";
 		$accepted = -1;
 		$blocked = -1;
+		$error = -1;
 		$owner = -1; 
 		$lang = $defaultLang;
 		
@@ -55,11 +66,23 @@
 			$blocked = $_GET["blocked"];
 			if ($blocked>1)
 				$blocked = 1;
+			if ($blocked<-1)
+				$blocked = -1;
 		}
 		if (isset($_GET["accepted"]) && is_numeric($_GET["accepted"])){
 			$accepted = $_GET["accepted"];
 			if ($accepted>1)
 				$accepted = 1;
+			if ($accepted<-1)
+				$accepted = -1;
+		}
+		if (isset($_GET["processing"]) && is_numeric($_GET["processing"])){
+			$error = $_GET["processing"];
+			
+			if ($error>1)
+				$error = 1;
+			if ($error<-1)
+				$error = -1;
 		}
 		if (isset($_GET["owner"]) && is_numeric($_GET["owner"])){
 			$owner = $_GET["owner"];
@@ -81,14 +104,19 @@
 			$where .= "Q.ACCEPTED =".$accepted." AND ";
 		if ($blocked != -1)
 			$where .= "Q.BLOCKED =".$blocked." AND ";
-		
+		if ($error == 0)
+			$where .= "Q.PROCESSING =-1 AND ";
+		else if ($error == 1)
+			$where .= "Q.PROCESSING IN(0,1) AND ";
 		$where .= "1 ";
 		// initial HTML build
 		$html = "
-		<link rel='stylesheet' type='text/css' href='".plugins_url( 'css/style.css', __FILE__ )."'/>
+		<link rel='stylesheet' type='text/css' href='".plugins_url( 'css/preview.css', __FILE__ )."'/>
+		<link rel='stylesheet' type='text/css' href='".plugins_url( 'css/popup.css', __FILE__ )."'/>
 		<script src='".plugins_url( 'js/imgPreview.js', __FILE__ )."' ></script>
 		<script src='".plugins_url( 'js/soundHandler.js', __FILE__ )."' ></script>
 		<script src='".plugins_url( 'js/utils.js', __FILE__ )."' ></script>
+		
 		<script>
 			// assign filters parameters
 			function AssignFilterValues() {
@@ -97,6 +125,7 @@
 				setComboBoxValue('cbLanguage', parameters['lang']);
 				setComboBoxValue('cbAccepted', parameters['accepted']);
 				setComboBoxValue('cbBlocked', parameters['blocked']);
+				setComboBoxValue('cbError', parameters['processing']);
 				if (parameters['type']!= null)
 					setCheckboxGroupValue('type_chk_group', parameters['type'].split(','));
 				else
@@ -115,12 +144,127 @@
 				parameters['diff'] = getCheckboxGroupValue('diff_chk_group');
 				parameters['accepted'] = $('#cbAccepted option:selected').val();
 				parameters['blocked'] = $('#cbBlocked option:selected').val();
+				parameters['processing'] = $('#cbError option:selected').val();
 				var newQuery = buildUrlParameters(parameters);
 				console.log(newQuery);
 				location.href='?'+newQuery;
 			}
 		</script>";
+		// popup html
 		
+		
+		// gettig categories
+		$finalLanguage = $lang;
+
+		$catsResults = mysql_query("SELECT C.ID, C.".$finalLanguage." FROM questions_cats C");
+		if ($catsResults==null)
+		{
+			$catsResults =mysql_query("SELECT C.ID, C.".$defaultLang." FROM questions_cats C");
+			$finalLanguage = $defaultLang;
+		}
+		$catsOptions = "";
+        while($catsRow = mysql_fetch_array($catsResults)) 
+			$catsOptions .= "<option value='".$catsRow['ID']."'>".$catsRow[$finalLanguage]."</option>";
+		
+		$html .="
+			<div class='messagepop pop'>
+				<div class='innermessage'>
+					<p class = 'header'>Konfigurator pytania</p>
+					<p>Meta dane:</p>
+						<table><tr>
+							<td>Kategoria: <br>
+								<select id='cbCats'>".$catsOptions."</select></td>
+							<td>
+								Trudność:<br>
+								<div class='difficulty'>
+									<span id ='difficulty_4' onclick=\"selectStars(4);\">".$imageStarEmptyHTML."</span>
+									<span id ='difficulty_3' onclick=\"selectStars(3);\">".$imageStarEmptyHTML."</span>
+									<span id ='difficulty_2' onclick=\"selectStars(2);\">".$imageStarEmptyHTML."</span>
+									<span id ='difficulty_1' onclick=\"selectStars(1);\">".$imageStarEmptyHTML."</span>
+								</div>
+							</td>
+							<td>
+								Typ:<br>
+								<input type='radio' id='edit_type_val_1' name='type_radio_group' value='1' onchange =\"onRadioClick();\" />".kinszowka_control_panel_get_type_img(1)." 
+								<input type='radio' id='edit_type_val_2' name='type_radio_group' value='2' onchange =\"onRadioClick();\"/>".kinszowka_control_panel_get_type_img(2)."
+								<input type='radio' id='edit_type_val_3' name='type_radio_group' value='3' onchange =\"onRadioClick();\"/>".kinszowka_control_panel_get_type_img(3)."
+							</td>
+						</tr></table>
+					
+					<p id='question_data'>Dane pytania: </p>
+					 
+					<table>
+						<thead>
+							<tr>
+								<td>Język</td>
+								<td>Pytanie</td>
+								<td>Odpowiedź A</td>
+								<td>Odpowiedź B</td>
+								<td>Odpowiedź C</td>
+								<td>Odpowiedź D</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td></td>
+								<td></td>
+								<td><input type='radio' id='answer_correctnes_A' name='answer_correctnes_group' value='1'  /></td>
+								<td><input type='radio' id='answer_correctnes_B' name='answer_correctnes_group' value='2'  /></td>
+								<td><input type='radio' id='answer_correctnes_C' name='answer_correctnes_group' value='3'  /></td>
+								<td><input type='radio' id='answer_correctnes_D' name='answer_correctnes_group' value='4'  /></td>
+							</tr>
+							<tr>
+								<td>PL</td>
+								<td><textarea maxlength='160' id='PL_Q'></textarea></td>
+								<td><textarea maxlength='40' id='PL_A'></textarea></td>
+								<td><textarea maxlength='40' id='PL_B'></textarea></td>
+								<td><textarea maxlength='40' id='PL_C'></textarea></td>
+								<td><textarea maxlength='40' id='PL_D'></textarea></td>
+							</tr>
+							<tr>
+								<td>EN</td>
+								<td><textarea maxlength='160' id='EN_Q'></textarea></td>
+								<td><textarea maxlength='40' id='EN_A'></textarea></td>
+								<td><textarea maxlength='40' id='EN_B'></textarea></td>
+								<td><textarea maxlength='40' id='EN_C'></textarea></td>
+								<td><textarea maxlength='40' id='EN_D'></textarea></td>
+							</tr>
+						</tbody>
+					</table>
+					<div id='data_error' style='color: red'>Dane: Wystąpił błąd podczas procesowania danych. Spróbuj ponownie.</div>
+					<div id='data_info'>Dane: Trwa procesowanie...</div>
+					<audio id='audio'> </audio>
+					<div id='audio_data' onmouseover=\"PlaySound('audio')\" onmouseout=\"StopSound('audio')\">Dane audio: ".kinszowka_control_panel_get_type_img(3)." </div>
+					<div id='image_data'>Dane obrazu: <a id='image_data_a' class='preview' > ".kinszowka_control_panel_get_type_img(2)." </a></div>
+					<br>
+					<div id='data_image'>
+						<input type='file' id='fileinput_image' accept='image/*' /> max 64kb
+					</div>
+					<div id='data_audio'>
+						<input type='file' id='fileinput_audio' accept='audio/*' /> max 64kb
+					</div>
+					<span id='upload_error' class='upload_error'></span>
+					<p id='question_data'>Dane konfiguracyjne: </p>
+					<table><tr>
+							<td>Zablokowany: <br>
+								<select id='cbDisabledEdit'>
+									<option value='0'>Nie</option>
+									<option value='1'>Tak</option>
+								</select></td>
+							</td>
+							<td>Zaakceptowany: <br>";
+		if ($canManipulate)
+			$html .= "			<select id='cbAcceptedEdit'>
+									<option value='0'>Nie</option>
+									<option value='1'>Tak</option>
+								</select></td>";
+		$html .= "			</td>
+						</tr>
+					</table>
+					<p style='text-align: right;'><input style='margin: 10px 0px 0px 0px;' type='submit' value='Zapisz!' name='commit' id='message_submit'/> lub <a class='close' href='#'>Anuluj</a></p>
+				</div>
+			</div>
+		";
 		// === buildin filters
 		$html .= "<table><tr>";
 		// language
@@ -129,11 +273,13 @@
 						<option value='EN'>EN</option>
 					  </select></td>";
 		// type
-		$html .= "<td style='text-align: center; vertical-align: middle;'><input type='checkbox' id='type_val_1' name='type_chk_group' value='1' />".kinszowka_control_panel_get_type_img(1)." 
+		$html .= "<td style='text-align: center; vertical-align: middle; min-width: 160px;'>
+				  <input type='checkbox' id='type_val_1' name='type_chk_group' value='1' />".kinszowka_control_panel_get_type_img(1)." 
 				  <input type='checkbox' id='type_val_2' name='type_chk_group' value='2' />".kinszowka_control_panel_get_type_img(2)."
 				  <input type='checkbox' id='type_val_3' name='type_chk_group' value='3' />".kinszowka_control_panel_get_type_img(3)."</td>";
 		// diff
-		$html .= "<td style='vertical-align: middle;'><input type='checkbox' id 'diff_val_1' name='diff_chk_group' value='1' />".kinszowka_control_panel_get_diff_img(1)." <br />
+		$html .= "<td style='vertical-align: middle; min-width: 100px;'>
+				  <input type='checkbox' id 'diff_val_1' name='diff_chk_group' value='1' />".kinszowka_control_panel_get_diff_img(1)." <br />
 				  <input type='checkbox' id='diff_val_2' name='diff_chk_group' value='2' />".kinszowka_control_panel_get_diff_img(2)."<br />
 				  <input type='checkbox' id='diff_val_3' name='diff_chk_group' value='3' />".kinszowka_control_panel_get_diff_img(3)."<br />
 				  <input type='checkbox' id='diff_val_4' name='diff_chk_group' value='4' />".kinszowka_control_panel_get_diff_img(4)."<br />
@@ -144,23 +290,34 @@
 						<option value='0'>Niezaakceptowane</option>
 						<option value='1'>Zaakceptowane</option>
 					  </select></td>";
-		// accepted
+		// blocked
 		$html .= "<td style='text-align: center; vertical-align: middle;'>Zablokowane: <select id='cbBlocked'>
 						<option value='-1'>Wszystkie</option>
 						<option value='0'>Niezablokowane</option>
 						<option value='1'>Zablokowane</option>
 					  </select></td>";
-		
+		// error
+		$html .= "<td style='text-align: center; vertical-align: middle;'>Błędne: <select id='cbError'>
+						<option value='-1'>Wszystkie</option>
+						<option value='0'>Błędne</option>
+						<option value='1'>Tylko OK</option>
+					  </select></td>";
 		// building get url
 		$newGet = $_GET;
 		// final filter button
 		$html .= "<td style='text-align: center; vertical-align: middle;'><input type='button' onclick='OnFilterClick()' value='Filtruj!' /></td>";
 		$html .= "</tr></table>";
 		$html .= "<script>AssignFilterValues();</script>";
-		//$html .= "Języki: <a href='?".http_build_query($newGetPL)."'>PL</a> <a href='?".http_build_query($newGetEN)."'>EN</a>";
-		
+
 		// building table
 		$html .="
+		<input type='button' onclick=\"fillWithData(1,1,1,0,0,1,1,
+					{	
+						'PL': { 'Q': 'Pytanie', 'A': 'Odpowiedź A', 'B': 'Odpowiedź B', 'C': 'Odpowiedź C', 'D': 'Odpowiedź D' },
+						'EN': { 'Q': 'Question',  'A': 'Answer A', 'B': 'Answer B', 'C': 'Answer C', 'D': 'Answer D' }
+					},
+					null
+					);\" name='edit' value='Dodaj pytanie!' />
 		<table>
         <thead>
             <tr>
@@ -174,7 +331,6 @@
 				<td>Odpowiedź C</td>
 				<td>Odpowiedź D</td>
 				<td>Akcje</td>
-				
             </tr>
         </thead>
         <tbody>";
@@ -184,35 +340,30 @@
 		$totalCount = mysql_fetch_array($countResult)['C'];
 		$maxPage = ceil((float)$totalCount/(float)$limit);
 		
-		$finalLanguage = $lang;
 
-		$results = mysql_query("SELECT Q.ID, Q.LAST_MOD, Q.ACCEPTED, Q.BLOCKED, Q.DATA, Q.".$lang." QN, C.".$lang." CN, D.ID DID, T.ID TID FROM questions Q 
+
+		$results = mysql_query("SELECT Q.ID, Q.LAST_MOD, Q.ACCEPTED, Q.BLOCKED, Q.PROCESSING, Q.DATA, Q.PL, Q.EN, C.ID CID, C.".$finalLanguage." CN, D.ID DID, T.ID TID FROM questions Q 
 								JOIN questions_cats C ON Q.ID_CAT = C.ID 
 								JOIN questions_difficulty D ON Q.ID_DIFF = D.ID 
 								JOIN questions_types T ON Q.ID_TYPE = T.ID " . $where. " 
 								ORDER BY Q.ID DESC LIMIT ".$from.", ".$limit);
-		if ($results==null)
-		{
-			$results = mysql_query("SELECT Q.ID, Q.LAST_MOD, Q.ACCEPTED, Q.BLOCKED, Q.DATA, Q.".$defaultLang." QN, C.".$defaultLang." CN, D.ID DID, T.ID TID FROM questions Q 
-								JOIN questions_cats C ON Q.ID_CAT = C.ID 
-								JOIN questions_difficulty D ON Q.ID_DIFF = D.ID 
-								JOIN questions_types T ON Q.ID_TYPE = T.ID " . $where. "
-								ORDER BY Q.ID DESC LIMIT ".$from.", ".$limit);
-			$finalLanguage = $defaultLang;
-		}
+
         while($row = mysql_fetch_array($results)) {
 			$isOwner = false;
 			$canManipulateThis = $canManipulate || $isOwner;
-            $content = $row['QN'];
+			$content = $row[$finalLanguage];
+
 			if ($row['TID'] == 3)
 				$html .= "<audio id='audio_".$row['ID']."' src=data:audio/ogg;base64,".base64_encode($row['DATA'])." />";
 			
-			$resultsAnswer = mysql_query("SELECT A.".$finalLanguage.", A.CORRECT FROM questions_answer A
+			$resultsAnswer = mysql_query("SELECT A.PL, A.EN, A.CORRECT FROM questions_answer A
 										  WHERE A.ID_QUESTIONS = ".$row['ID']);
 			if ($row['ACCEPTED']==0)
 				$html .= "<tr bgcolor='yellow'>";
 			else if ($row['BLOCKED']==1)
 				$html .= "<tr bgcolor='grey'>";
+			else if ($row['PROCESSING']==-1)
+				$html .= "<tr bgcolor='red'>";
 			else
 				$html .= "<tr>";
 			$html .= "	<td>".$lp."</td>
@@ -231,28 +382,53 @@
 						
 			$html .=    "</td>
 						<td style='min-width: 80px'>".kinszowka_control_panel_get_diff_img($row['DID'])."</td>
-						<td>".$row['QN']."</td>";
+						<td>".$content."</td>";
+			$correctAnswerIndex = -1;
+			$index = 0;
+			$answers = [
+				"PL" => [],
+				"EN" => [],
+				];
 			while($rowAnswer = mysql_fetch_array($resultsAnswer)) {
 				$html .= "<td style='min-width: 85px'>";
+				$answers["PL"][$index] = htmlspecialchars(trim(preg_replace('/\s+/', ' ', $rowAnswer["PL"])));
+				$answers["EN"][$index] = htmlspecialchars(trim(preg_replace('/\s+/', ' ', $rowAnswer["EN"])));
 				if ($rowAnswer['CORRECT'] == 1)
+				{
 					$html .= "<b>";
+					$correctAnswerIndex = $index;
+				}
 				$html .= $rowAnswer[$finalLanguage];
 				if ($rowAnswer['CORRECT'] == 1)
 					$html .= "</b>";
 				$html .= "</td>";
+				$index++;
 			}
 			
-			$html .= 	"<td style='width:70px'>";
+			$html .= "<td style='width:70px'>";
 			
 			global $imageEditHTML, $imageDeleteHTML;
 			if ($canManipulateThis)
 			{
-				$html .= $imageEditHTML . " ";
+				$html .= "<a href='#' onclick=\"fillWithData(
+					".$row['CID'].",
+					".$row['DID'].",
+					".$row['TID'].",
+					".$row['ACCEPTED'].",
+					".$row['BLOCKED'].",
+					".$correctAnswerIndex.",
+					".$row['PROCESSING'].",
+					{	
+						'PL': { 'Q': '".htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['PL'])))."',  'A': '".$answers["PL"][0]."', 'B': '".$answers["PL"][1]."', 'C': '".$answers["PL"][2]."', 'D': '".$answers["PL"][3]."' },
+						'EN': { 'Q': '".htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['EN'])))."',  'A': '".$answers["EN"][0]."', 'B': '".$answers["EN"][1]."', 'C': '".$answers["EN"][2]."', 'D': '".$answers["EN"][3]."' }
+					},
+					'".base64_encode($row['DATA'])."'
+					);\" name='edit'>" . $imageEditHTML . "</a> ";
 				$html .= $imageDeleteHTML;
 			}
 			
 			
-			$html .= 	"</td> </tr>";
+			$html .= "</td> </tr>";
 
 			$lp++;
 		}
