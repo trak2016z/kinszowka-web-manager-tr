@@ -1,14 +1,14 @@
 <?php
 
-	$imageIconHTML  = "<img src='".plugins_url( 'image-icon.png', __FILE__ )."'>";
-	$imageMusciHTML = "<img src='".plugins_url( 'music-icon.png', __FILE__ )."'>";
-	$imageTextHTML  = "<img src='".plugins_url( 'text-icon.png', __FILE__ )."'>";
-	$imageStarHTML  = "<img src='".plugins_url( 'star-icon.png', __FILE__ )."'>";
-	$imageStarEmptyHTML  = "<img src='".plugins_url( 'star-empty-icon.png', __FILE__ )."'>";
-	$imageEditHTML  = "<img src='".plugins_url( 'edit-icon.png', __FILE__ )."'>";
-	$imageDeleteHTML  = "<img src='".plugins_url( 'delete-icon.png', __FILE__ )."'>";
-	$imageDisableOnHTML  = "<img src='".plugins_url( 'disable-on-icon.png', __FILE__ )."'>";
-	$imageDisableOffHTML  = "<img src='".plugins_url( 'disable-off-icon.png', __FILE__ )."'>";
+	$imageIconHTML  = "<img src=\"".plugins_url( 'image-icon.png', __FILE__ )."\">";
+	$imageMusciHTML = "<img src=\"".plugins_url( 'music-icon.png', __FILE__ )."\">";
+	$imageTextHTML  = "<img src=\"".plugins_url( 'text-icon.png', __FILE__ )."\">";
+	$imageStarHTML  = "<img src=\"".plugins_url( 'star-icon.png', __FILE__ )."\">";
+	$imageStarEmptyHTML  = "<img src=\"".plugins_url( 'star-empty-icon.png', __FILE__ )."\">";
+	$imageEditHTML  = "<img src=\"".plugins_url( 'edit-icon.png', __FILE__ )."\">";
+	$imageDeleteHTML  = "<img src=\"".plugins_url( 'delete-icon.png', __FILE__ )."\">";
+	$imageDisableOnHTML  = "<img src=\"".plugins_url( 'disable-on-icon.png', __FILE__ )."\">";
+	$imageDisableOffHTML  = "<img src=\"".plugins_url( 'disable-off-icon.png', __FILE__ )."\">";
 
 	function kinszowka_control_panel_get_type_img($typeID)
 	{

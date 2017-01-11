@@ -261,7 +261,10 @@
 		$html .= "			</td>
 						</tr>
 					</table>
-					<p style='text-align: right;'><input style='margin: 10px 0px 0px 0px;' type='submit' value='Zapisz!' name='commit' id='message_submit'/> lub <a class='close' href='#'>Anuluj</a></p>
+					
+						<div id='save_error' class='upload_error' style='float: left;'></div>
+						<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='commit' id='message_submit' onclick='validate();'/> lub <a class='close' href='#'>Anuluj</a></div>
+					<p style='margin: 60px 0px 0px 0px;'></p>
 				</div>
 			</div>
 		";
@@ -311,13 +314,13 @@
 
 		// building table
 		$html .="
-		<input type='button' onclick=\"fillWithData(1,1,1,0,0,1,1,
+		<input type=\"button\" onclick=\"fillWithData(1,1,1,0,0,1,1,
 					{	
 						'PL': { 'Q': 'Pytanie', 'A': 'Odpowiedź A', 'B': 'Odpowiedź B', 'C': 'Odpowiedź C', 'D': 'Odpowiedź D' },
 						'EN': { 'Q': 'Question',  'A': 'Answer A', 'B': 'Answer B', 'C': 'Answer C', 'D': 'Answer D' }
 					},
 					null
-					);\" name='edit' value='Dodaj pytanie!' />
+					);\" name=\"edit\" value=\"Dodaj pytanie!\" />
 		<table>
         <thead>
             <tr>
@@ -354,7 +357,7 @@
 			$content = $row[$finalLanguage];
 
 			if ($row['TID'] == 3)
-				$html .= "<audio id='audio_".$row['ID']."' src=data:audio/ogg;base64,".base64_encode($row['DATA'])." />";
+				$html .= "<audio id=\"audio_".$row['ID']."\" src=\"data:audio/ogg;base64,".base64_encode($row['DATA'])."\"></audio>";
 			
 			$resultsAnswer = mysql_query("SELECT A.PL, A.EN, A.CORRECT FROM questions_answer A
 										  WHERE A.ID_QUESTIONS = ".$row['ID']);
@@ -391,12 +394,12 @@
 				];
 			while($rowAnswer = mysql_fetch_array($resultsAnswer)) {
 				$html .= "<td style='min-width: 85px'>";
-				$answers["PL"][$index] = htmlspecialchars(trim(preg_replace('/\s+/', ' ', $rowAnswer["PL"])));
-				$answers["EN"][$index] = htmlspecialchars(trim(preg_replace('/\s+/', ' ', $rowAnswer["EN"])));
+				$answers["PL"][$index] = addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $rowAnswer["PL"]))));
+				$answers["EN"][$index] = addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $rowAnswer["EN"]))));
 				if ($rowAnswer['CORRECT'] == 1)
 				{
 					$html .= "<b>";
-					$correctAnswerIndex = $index;
+					$correctAnswerIndex = $index+1;
 				}
 				$html .= $rowAnswer[$finalLanguage];
 				if ($rowAnswer['CORRECT'] == 1)
@@ -405,25 +408,26 @@
 				$index++;
 			}
 			
-			$html .= "<td style='width:70px'>";
+			$html .= "<td style=\"width:70px\">";
 			
 			global $imageEditHTML, $imageDeleteHTML;
+	
 			if ($canManipulateThis)
 			{
-				$html .= "<a href='#' onclick=\"fillWithData(
-					".$row['CID'].",
-					".$row['DID'].",
-					".$row['TID'].",
-					".$row['ACCEPTED'].",
-					".$row['BLOCKED'].",
-					".$correctAnswerIndex.",
-					".$row['PROCESSING'].",
+				$html .= trim(preg_replace('/\s+/', ' ',"<a href=\"#\" onclick=\"fillWithData(
+					".$row['CID'].", 
+					".$row['DID'].", 
+					".$row['TID'].", 
+					".$row['ACCEPTED'].", 
+					".$row['BLOCKED'].", 
+					".$correctAnswerIndex.", 
+					".$row['PROCESSING'].", 
 					{	
-						'PL': { 'Q': '".htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['PL'])))."',  'A': '".$answers["PL"][0]."', 'B': '".$answers["PL"][1]."', 'C': '".$answers["PL"][2]."', 'D': '".$answers["PL"][3]."' },
-						'EN': { 'Q': '".htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['EN'])))."',  'A': '".$answers["EN"][0]."', 'B': '".$answers["EN"][1]."', 'C': '".$answers["EN"][2]."', 'D': '".$answers["EN"][3]."' }
-					},
-					'".base64_encode($row['DATA'])."'
-					);\" name='edit'>" . $imageEditHTML . "</a> ";
+						'PL': { 'Q': '".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['PL']))))."',  'A': '".$answers["PL"][0]."', 'B': '".$answers["PL"][1]."', 'C': '".$answers["PL"][2]."', 'D': '".$answers["PL"][3]."' },
+						'EN': { 'Q': '".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['EN']))))."',  'A': '".$answers["EN"][0]."', 'B': '".$answers["EN"][1]."', 'C': '".$answers["EN"][2]."', 'D': '".$answers["EN"][3]."' }
+					}, 
+					".($row['DATA']!=null ? ("'".base64_encode($row['DATA'])."'") : "null")."
+					);\" name=\"edit\">" . $imageEditHTML . "</a> "));
 				$html .= $imageDeleteHTML;
 			}
 			
