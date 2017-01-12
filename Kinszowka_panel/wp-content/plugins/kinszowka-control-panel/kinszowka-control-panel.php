@@ -18,11 +18,13 @@
 		wp_register_script('popup-js',plugins_url( 'js/popup.js', __FILE__ ),array('jquery'));
 		wp_register_script('imgPreview-js',plugins_url( 'js/imgPreview.js', __FILE__ ),array('jquery'));
 		wp_register_script('utils-js',plugins_url( 'js/utils.js', __FILE__ ),array('jquery'));
+		wp_register_script('soundHandler-js',plugins_url( 'js/soundHandler.js', __FILE__ ),array('jquery'));
 		
 		
 		wp_enqueue_script('popup-js');
 		wp_enqueue_script('imgPreview-js');
 		wp_enqueue_script('utils-js');
+		wp_enqueue_script('soundHandler-js');
 		
 		$wnm_custom = array( 
 		'star_path' => plugins_url( 'resources/star-icon.png', __FILE__ ),
@@ -382,15 +384,15 @@
 			}
 		}
 		// building table
-		$html .="
+		$html .=trim(preg_replace('/\s+/', ' ',"
 		<input type=\"button\" onclick=\"fillWithData(1,1,1,0,0,1,1,
 					{	
 						'PL': { 'Q': 'Pytanie', 'A': 'Odpowiedź A', 'B': 'Odpowiedź B', 'C': 'Odpowiedź C', 'D': 'Odpowiedź D' },
 						'EN': { 'Q': 'Question',  'A': 'Answer A', 'B': 'Answer B', 'C': 'Answer C', 'D': 'Answer D' }
 					},
-					null,
-					);\" name=\"edit\" value=\"Dodaj pytanie!\" />
-		<table>
+					null
+					);\" name=\"edit\" value=\"Dodaj pytanie!\" />"));
+		$html .="<table>
         <thead>
             <tr>
                 <td>L.p.</td>
