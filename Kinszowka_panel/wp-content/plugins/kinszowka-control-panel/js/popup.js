@@ -1,19 +1,86 @@
-
+﻿
 function deselect(e) {
 	$('.pop').slideFadeToggle(function() {
 		e.removeClass('selected');
 	});
 }
+function showPopup(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage) {
+	if($("[name='edit']").hasClass('selected')) {
+		deselect($("[name='edit']"));               
+	} else {
+		$("[name='edit']").addClass('selected');
+		$('.pop').slideFadeToggle();
+		fillWithData(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage);
+	}
+}
+function handleSendClick()
+{
+	if (validate())
+	{
+		var postScriptPath = wnm_custom.add_question_path;
+		var catID = $('#cbCats').val();
+		var blocked = $('#cbDisabledEdit').val();
+		var accepted = $('#cbAcceptedEdit').val();
+		var diffID = getStarsValue();
+		var typeID = $("input:radio[name ='type_radio_group']:checked").val();
+		var correct = $("input:radio[name ='answer_correctnes_group']:checked").val();
+		var languagesConfig = {	
+						'PL': { 'Q': $('#PL_Q').val(), 'A': $('#PL_A').val(), 'B': $('#PL_B').val(), 'C': $('#PL_C').val(), 'D': $('#PL_D').val() },
+						'EN': { 'Q': $('#EN_Q').val(), 'A': $('#EN_A').val(), 'B': $('#EN_B').val(), 'C': $('#EN_C').val(), 'D': $('#EN_D').val() }
+		}
+		var data = null;
+		
+		if (typeID == 2)
+			data = $("#fileinput_image")[0].files[0];
+		else
+			data = $("#fileinput_audio")[0].files[0];
+		var fd = new FormData();
+		fd.append('catID', catID);
+		fd.append('blocked', blocked);
+		fd.append('accepted', accepted);
+		fd.append('diffID', diffID);//diffID
+		fd.append('typeID', typeID);
+		fd.append('correct', correct);
+		fd.append('data', data);
+		for(var key in languagesConfig)
+		{
+			fd.append(key+'_Q', $('#'+key+'_Q').val());
+			fd.append(key+'_A', $('#'+key+'_A').val());
+			fd.append(key+'_B', $('#'+key+'_B').val());
+			fd.append(key+'_C', $('#'+key+'_C').val());
+			fd.append(key+'_D', $('#'+key+'_D').val());
+		}
+		
+		$.ajax({
+			type: 'POST',
+			url: postScriptPath,
+			data: fd,
+			processData: false,
+			contentType: false,
+			error: function(xhr, textStatus, errorThrown){
+				alert(errorThrown);
+			}
+			})
+			
+			.done(function( data ) {
+				log(data, false);
+			})
+			.fail(function( errorMessage) {
+				log(errorMessage, true);
+			})
+			.always(function() {
+				//alert( "finished" );
+			});
+	}
+}
 function validate()
 {
 	var error="";
-	
-	var questionMaxLength = 160;
-	var answerMaxLength = 40;
-	var fileMaxSize = 64*1024;
+
+	var fileMaxSize = wnm_custom.file_size_max;
 	var languagesConfig = {	
-						'PL': { 'Q': 160, 'A': 40, 'B': 40, 'C': 40, 'D': 40 },
-						'EN': { 'Q': 160, 'A': 40, 'B': 40, 'C': 40, 'D': 40 }
+						'PL': { 'Q': wnm_custom.question_max_length, 'A': wnm_custom.answer_max_length, 'B': wnm_custom.answer_max_length, 'C': wnm_custom.answer_max_length, 'D': wnm_custom.answer_max_length },
+						'EN': { 'Q': wnm_custom.question_max_length, 'A': wnm_custom.answer_max_length, 'B': wnm_custom.answer_max_length, 'C': wnm_custom.answer_max_length, 'D': wnm_custom.answer_max_length }
 					}
 	
 	
@@ -62,27 +129,30 @@ function validate()
 		if ($("#fileinput_image")[0].files.length==0)
 			error = "Nie wybrano pliku graficznego!";
 		else if ($("#fileinput_image")[0].files[0].size>fileMaxSize)
-			error = "Wybrany plik graficzny jest zbyt duży! Max 64 kb. Plik ma: "+Math.round($("#fileinput_image")[0].files[0].size/1024) + " kb";
+			error = "Wybrany plik graficzny jest zbyt duży! Max "+Math.round(wnm_custom.file_size_max/1024)+" kb. Plik ma: "+Math.round($("#fileinput_image")[0].files[0].size/1024) + " kb";
 	}
 	if ( $("input:radio[name ='type_radio_group']:checked").val()==3)
 	{
 		if ($("#fileinput_audio")[0].files.length==0)
-			error = "Nie wybrano pliku graficznego!";
+			error = "Nie wybrano pliku muzycznego!";
 		else if ($("#fileinput_audio")[0].files[0].size>fileMaxSize)
-			error = "Wybrany plik muzyczny jest zbyt duży! Max 64 kb. Plik ma: "+Math.round($("#fileinput_audio")[0].files[0].size/1024) + " kb. Przekonweruj plik na OGG Vorbis.";
+			error = "Wybrany plik muzyczny jest zbyt duży! Max "+Math.round(wnm_custom.file_size_max/1024)+" kb. Plik ma: "+Math.round($("#fileinput_audio")[0].files[0].size/1024) + " kb. Przekonweruj plik na OGG Vorbis.";
 	}
 	
 	if (error!="")
 	{
-		logError(error);
+		log(error, true);
 		return false;
 	}
 	else
 		return true;
 }
-function fillWithData(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data)
+function fillWithData(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage)
 {
-	logError("");
+	if (errorMessage!=null)
+		log(errorMessage, true);
+	else 
+		log("", false);
 	$('#cbCats').val(catIndex);
 	selectStars(diff);
 	$("input[name=type_radio_group][value=" + type + "]").prop('checked', true);
@@ -215,15 +285,19 @@ function getStarsValue()
 	
 	return stars.length;
 }
-function logError(error)
+function log(message, error)
 {
-	$("#save_error").html(error);
+	if (error)
+		$('#save_error').css('color', 'red');
+	else
+		$('#save_error').css('color', '');
+	$("#save_error").html(message);
 }
 /* upload */
 function onRadioClick()
 {
 	$("#upload_error").text("");
-	var fileMaxSize = 64*1024;
+	var fileMaxSize = wnm_custom.file_size_max;
 	
 	var radio_text = $("#edit_type_val_1");
 	var radio_image = $("#edit_type_val_2");
@@ -258,15 +332,23 @@ function onRadioClick()
 $("document").ready(function(){
 
 	$("#fileinput_image").change(function(){
-		var file = this.files[0];
-		if (file.size>64*1024)
-			$("#upload_error").text("Plik jest za duży!");
-		
+		if (this.files.length>0)
+		{
+			var file = this.files[0];
+			if (file.size>wnm_custom.file_size_max)
+				$("#upload_error").text("Plik jest za duży!");
+		}
+		else
+			$("#upload_error").text("");
 	});
 	$("#fileinput_audio").change( function(){
-		var file = this.files[0];
-		if (file.size>64*1024)
-			$("#upload_error").text("Plik jest za duży!");
-		
+		if (this.files.length>0)
+		{
+			var file = this.files[0];
+			if (file.size>wnm_custom.file_size_max)
+				$("#upload_error").text("Plik jest za duży!");
+		}
+		else
+			$("#upload_error").text("");
 	});
 });

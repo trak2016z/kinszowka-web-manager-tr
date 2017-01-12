@@ -5,22 +5,44 @@
 	Version:     1.0.0
 	Author:      Marcin Iwaniec
 	*/
-	include_once( 'includes/kinszowka-control-panel-shortcode.php' );
-	include_once( 'includes/kinszowka-control-panel-config.php' );
-	include_once( 'resources/kinszowka-control-panel-resources.php' );
+	include_once( 'includes/kinszowka-control-panel-shortcode.php');
+	include_once( 'includes/kinszowka-control-panel-config.php');
+	include_once( 'includes/kinszowka-control-panel-utils.php' );
+	include_once( 'resources/kinszowka-control-panel-resources.php');
+	
+	
+	function load_popup_script()
+	{
+		global $fileSizeMax, $questionMaxLength, $answerMaxLength;
+		
+		wp_register_script('popup-js',plugins_url( 'js/popup.js', __FILE__ ),array('jquery'));
+		wp_register_script('imgPreview-js',plugins_url( 'js/imgPreview.js', __FILE__ ),array('jquery'));
+		wp_register_script('utils-js',plugins_url( 'js/utils.js', __FILE__ ),array('jquery'));
+		
+		
+		wp_enqueue_script('popup-js');
+		wp_enqueue_script('imgPreview-js');
+		wp_enqueue_script('utils-js');
+		
+		$wnm_custom = array( 
+		'star_path' => plugins_url( 'resources/star-icon.png', __FILE__ ),
+		'star_empty_path' => plugins_url( 'resources/star-empty-icon.png', __FILE__ ),
+		'add_question_path' => plugins_url( 'includes/kinszowka-control-panel-add-question.php', __FILE__ ),
+		'file_size_max' => $fileSizeMax,
+		'question_max_length' => $questionMaxLength,
+		'answer_max_length' => $answerMaxLength
+		);
+		
+		wp_localize_script( 'popup-js', 'wnm_custom', $wnm_custom );
+	}
+	
+	if (!has_action( 'wp_enqueue_scripts', 'load_popup_script' ))
+		add_action( 'wp_enqueue_scripts', 'load_popup_script' );
 	
 	function kinszowk_control_panel_get_questions()
 	{
-		global $imageStarEmptyHTML;
+		global $imageStarEmptyHTML, $fileSizeMax, $questionMaxLength, $answerMaxLength;
 		
-		wp_register_script('popup-js',plugins_url( 'js/popup.js', __FILE__ ),array(),NULL,true);
-		wp_enqueue_script('popup-js');
-
-		$wnm_custom = array( 
-		'star_path' => plugins_url( 'resources/star-icon.png', __FILE__ ),
-		'star_empty_path' => plugins_url( 'resources/star-empty-icon.png', __FILE__ ));
-		wp_localize_script( 'popup-js', 'wnm_custom', $wnm_custom );
-	
 		//connecting to db
 		$connectResult = db_connect();
 		if ($connectResult!==true)
@@ -47,6 +69,7 @@
 		$blocked = -1;
 		$error = -1;
 		$owner = -1; 
+		$showID = -1; 
 		$lang = $defaultLang;
 		
 		// getting get data
@@ -88,6 +111,13 @@
 			$owner = $_GET["owner"];
 			if ($owner>1)
 				$owner = 1;
+			if ($owner<-1)
+				$owner = -1;
+		}
+		if (isset($_GET["showID"]) && is_numeric($_GET["showID"])){
+			$showID = $_GET["showID"];
+			if ($showID<-1)
+				$showID = -1;
 		}
 		// calculations
 		$from = ($page-1)*$limit;
@@ -113,9 +143,7 @@
 		$html = "
 		<link rel='stylesheet' type='text/css' href='".plugins_url( 'css/preview.css', __FILE__ )."'/>
 		<link rel='stylesheet' type='text/css' href='".plugins_url( 'css/popup.css', __FILE__ )."'/>
-		<script src='".plugins_url( 'js/imgPreview.js', __FILE__ )."' ></script>
-		<script src='".plugins_url( 'js/soundHandler.js', __FILE__ )."' ></script>
-		<script src='".plugins_url( 'js/utils.js', __FILE__ )."' ></script>
+		
 		
 		<script>
 			// assign filters parameters
@@ -215,19 +243,19 @@
 							</tr>
 							<tr>
 								<td>PL</td>
-								<td><textarea maxlength='160' id='PL_Q'></textarea></td>
-								<td><textarea maxlength='40' id='PL_A'></textarea></td>
-								<td><textarea maxlength='40' id='PL_B'></textarea></td>
-								<td><textarea maxlength='40' id='PL_C'></textarea></td>
-								<td><textarea maxlength='40' id='PL_D'></textarea></td>
+								<td><textarea maxlength='".$questionMaxLength."' id='PL_Q'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='PL_A'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='PL_B'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='PL_C'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='PL_D'></textarea></td>
 							</tr>
 							<tr>
 								<td>EN</td>
-								<td><textarea maxlength='160' id='EN_Q'></textarea></td>
-								<td><textarea maxlength='40' id='EN_A'></textarea></td>
-								<td><textarea maxlength='40' id='EN_B'></textarea></td>
-								<td><textarea maxlength='40' id='EN_C'></textarea></td>
-								<td><textarea maxlength='40' id='EN_D'></textarea></td>
+								<td><textarea maxlength='".$questionMaxLength."' id='EN_Q'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='EN_A'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='EN_B'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='EN_C'></textarea></td>
+								<td><textarea maxlength='".$answerMaxLength."' id='EN_D'></textarea></td>
 							</tr>
 						</tbody>
 					</table>
@@ -262,8 +290,8 @@
 						</tr>
 					</table>
 					
-						<div id='save_error' class='upload_error' style='float: left;'></div>
-						<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='commit' id='message_submit' onclick='validate();'/> lub <a class='close' href='#'>Anuluj</a></div>
+						<div id='save_error' style='float: left;'></div>
+						<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='commit' id='message_submit' onclick='handleSendClick();'/> lub <a class='close' href='#'>Anuluj</a></div>
 					<p style='margin: 60px 0px 0px 0px;'></p>
 				</div>
 			</div>
@@ -312,6 +340,47 @@
 		$html .= "</tr></table>";
 		$html .= "<script>AssignFilterValues();</script>";
 
+		if ($showID>=0)
+		{
+			if ($showID == 0)
+				$showID = "(SELECT MAX(Q1.ID) FROM questions Q1)";
+			$SingleResult = mysql_query("SELECT Q.ID, Q.LAST_MOD, Q.ACCEPTED, Q.BLOCKED, Q.PROCESSING, Q.DATA, Q.PL, Q.EN, C.ID CID, C.".$finalLanguage." CN, D.ID DID, T.ID TID FROM questions Q 
+								JOIN questions_cats C ON Q.ID_CAT = C.ID 
+								JOIN questions_difficulty D ON Q.ID_DIFF = D.ID 
+								JOIN questions_types T ON Q.ID_TYPE = T.ID WHERE Q.ID = ".$showID.";");
+			if ($singleResultRow = mysql_fetch_array($SingleResult)) {
+				$singleResultsAnswer = mysql_query("SELECT A.PL, A.EN, A.CORRECT FROM questions_answer A
+													WHERE A.ID_QUESTIONS = ".$singleResultRow['ID']);
+				$singleAnswers = [
+					"PL" => [],
+					"EN" => [],
+				];
+				$correctAnswerIndex = -1;
+				$index = 0;
+				while($singleRowAnswer = mysql_fetch_array($singleResultsAnswer)) {
+					$singleAnswers["PL"][$index] = addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $singleRowAnswer["PL"]))));
+					$singleAnswers["EN"][$index] = addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $singleRowAnswer["EN"]))));
+					if ($singleRowAnswer['CORRECT'] == 1)
+						$correctAnswerIndex = $index+1;
+					$index++;
+				}
+				
+				$html.= trim(preg_replace('/\s+/', ' '," <div name=\"edit\"><script>showPopup(
+				".$singleResultRow['CID'].", 
+				".$singleResultRow['DID'].", 
+				".$singleResultRow['TID'].", 
+				".$singleResultRow['ACCEPTED'].", 
+				".$singleResultRow['BLOCKED'].", 
+				".$correctAnswerIndex.", 
+				".$singleResultRow['PROCESSING'].", 
+				{	
+					'PL': { 'Q': '".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $singleResultRow['PL']))))."',  'A': '".$singleAnswers["PL"][0]."', 'B': '".$singleAnswers["PL"][1]."', 'C': '".$singleAnswers["PL"][2]."', 'D': '".$singleAnswers["PL"][3]."' },
+					'EN': { 'Q': '".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $singleResultRow['EN']))))."',  'A': '".$singleAnswers["EN"][0]."', 'B': '".$singleAnswers["EN"][1]."', 'C': '".$singleAnswers["EN"][2]."', 'D': '".$singleAnswers["EN"][3]."' }
+				}, 
+				".($singleResultRow['DATA']!=null ? ("'".base64_encode($singleResultRow['DATA'])."'") : "null")."
+				); </script></div>"));
+			}
+		}
 		// building table
 		$html .="
 		<input type=\"button\" onclick=\"fillWithData(1,1,1,0,0,1,1,
@@ -319,7 +388,7 @@
 						'PL': { 'Q': 'Pytanie', 'A': 'Odpowiedź A', 'B': 'Odpowiedź B', 'C': 'Odpowiedź C', 'D': 'Odpowiedź D' },
 						'EN': { 'Q': 'Question',  'A': 'Answer A', 'B': 'Answer B', 'C': 'Answer C', 'D': 'Answer D' }
 					},
-					null
+					null,
 					);\" name=\"edit\" value=\"Dodaj pytanie!\" />
 		<table>
         <thead>
@@ -454,42 +523,4 @@
 		$html .= "</div>";
 		return $html;
 	}
-	
-	function db_connect()
-	{
-		global $db_host,$db_login, $db_password, $db_name, $db_charset;
-		
-		$connect = mysql_connect($db_host,$db_login, $db_password);
-		if (!$connect)
-			return mysql_error();
-		mysql_select_db($db_name);
-		mysql_set_charset ($db_charset);
-		return true;
-	}
-	function have_role($role)
-	{
-		$roles = wp_get_current_user()->roles;
-		for ($i = 0; $i < count($roles); $i++) 
-			if ($roles[$i] == $role)
-				return true;
-		return false;
-	}
-	
-	function correct_where_arr($arr)
-	{
-		$pieces = explode(",", $arr);
-		if (count($pieces)>0)
-		{
-			for ($i = 0; $i<count($pieces); $i++)
-				if (!is_numeric($pieces[$i]))
-					return false;
-		}
-		else
-			return false;
-		
-		return true;
-	}
-
-
-
 ?>
