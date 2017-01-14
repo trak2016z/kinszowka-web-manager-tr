@@ -1,4 +1,4 @@
-.messagepop {
+.popquestionconfig {
  
   display:none;
   position:absolute;
@@ -8,7 +8,17 @@
   z-index: 50;
   
 }
-.messagepop .header
+.popcategoryconfig {
+ 
+  display:none;
+  position:absolute;
+  left: 50%;
+  width:500px;
+  padding: 0px 0px 0px 96px;
+  z-index: 50;
+  
+}
+.pop .header
 {
 	border-top: none;
 	font-size: 200%;
@@ -19,16 +29,16 @@ label {
   padding-left: 15px;
   text-indent: -15px;
 }
-.messagepop td
+.pop td
 {
   text-align: center; 
   vertical-align: middle;
 }
-.messagepop p
+.pop p
 {
   border-top: 1px solid #EFEFEF;
 }
-.messagepop p, .messagepop.div {
+.pop p, .pop.div {
   margin: 8px 0;
   padding-bottom: 8px;
 }

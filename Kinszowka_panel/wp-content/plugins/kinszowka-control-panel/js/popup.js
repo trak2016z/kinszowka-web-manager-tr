@@ -1,23 +1,48 @@
 ﻿
 function deselect(e) {
-	$('.pop').slideFadeToggle(function() {
+	e.slideFadeToggle(function() {
 		e.removeClass('selected');
 	});
 }
-function showPopup(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage) {
+function showQuestionConfig(id, catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage) {
 	if($("[name='edit']").hasClass('selected')) {
-		deselect($("[name='edit']"));               
+		deselect($('.pop'));               
 	} else {
 		$("[name='edit']").addClass('selected');
 		$('.pop').slideFadeToggle();
-		fillWithData(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage);
+		fillWithData(id, catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage);
+	}
+}
+function handleDeleteClick(id)
+{
+	if (confirm('Czy na pewno chcesz usunąć to pytanie [id: '+id+']?')) {
+		var fd = new FormData();
+		fd.append('ID', id);
+		
+		$.ajax({
+			type: 'POST',
+			url: wnm_custom.delete_question_path,
+			data: fd,
+			processData: false,
+			contentType: false,
+			}).always(function( data ) {
+				var parameters = getUrlParameters();
+				parameters['showID'] = -1;
+				var newQuery = buildUrlParameters(parameters);
+				location.href='?'+newQuery;
+			});
+	} else {
+		// Do nothing!
 	}
 }
 function handleSendClick()
 {
 	if (validate())
 	{
+		$('#save_question').attr("disabled", true);
+		
 		var postScriptPath = wnm_custom.add_question_path;
+		var id = $('#save_question').attr('name');
 		var catID = $('#cbCats').val();
 		var blocked = $('#cbDisabledEdit').val();
 		var accepted = $('#cbAcceptedEdit').val();
@@ -35,13 +60,15 @@ function handleSendClick()
 		else
 			data = $("#fileinput_audio")[0].files[0];
 		var fd = new FormData();
+		fd.append('ID', id);
 		fd.append('catID', catID);
 		fd.append('blocked', blocked);
 		fd.append('accepted', accepted);
-		fd.append('diffID', diffID);//diffID
+		fd.append('diffID', diffID);
 		fd.append('typeID', typeID);
 		fd.append('correct', correct);
 		fd.append('data', data);
+		fd.append('pluginDir', wnm_custom.plugins_path)
 		for(var key in languagesConfig)
 		{
 			fd.append(key+'_Q', $('#'+key+'_Q').val());
@@ -63,18 +90,31 @@ function handleSendClick()
 			})
 			
 			.done(function( data ) {
-				log(data, false);
+				var result = data.charAt(1);
+				log(data.substring(3), result==0);
+				
 			})
 			.fail(function( errorMessage) {
+				
 				log(errorMessage, true);
 			})
-			.always(function() {
-				//alert( "finished" );
+			.always(function( data ) {
+				var result = data.charAt(1);
+				if (result==1)
+				{
+					var parameters = getUrlParameters();
+					parameters['showID'] = id;
+					var newQuery = buildUrlParameters(parameters);
+					setTimeout(function(){ location.href='?'+newQuery; }, 2000);
+				}
+				else
+					$('#save_question').attr("disabled", false);
 			});
 	}
 }
 function validate()
 {
+	var id = $('#save_question').attr('name');
 	var error="";
 
 	var fileMaxSize = wnm_custom.file_size_max;
@@ -126,16 +166,16 @@ function validate()
 	}
 	if ( $("input:radio[name ='type_radio_group']:checked").val()==2)
 	{
-		if ($("#fileinput_image")[0].files.length==0)
+		if (id == 0 && $("#fileinput_image")[0].files.length==0)
 			error = "Nie wybrano pliku graficznego!";
-		else if ($("#fileinput_image")[0].files[0].size>fileMaxSize)
+		if ($("#fileinput_image")[0].files.length>0 && $("#fileinput_image")[0].files[0].size>fileMaxSize)
 			error = "Wybrany plik graficzny jest zbyt duży! Max "+Math.round(wnm_custom.file_size_max/1024)+" kb. Plik ma: "+Math.round($("#fileinput_image")[0].files[0].size/1024) + " kb";
 	}
 	if ( $("input:radio[name ='type_radio_group']:checked").val()==3)
 	{
-		if ($("#fileinput_audio")[0].files.length==0)
+		if (id == 0 && $("#fileinput_audio")[0].files.length==0)
 			error = "Nie wybrano pliku muzycznego!";
-		else if ($("#fileinput_audio")[0].files[0].size>fileMaxSize)
+		if ($("#fileinput_audio")[0].files.length>0 && $("#fileinput_audio")[0].files[0].size>fileMaxSize)
 			error = "Wybrany plik muzyczny jest zbyt duży! Max "+Math.round(wnm_custom.file_size_max/1024)+" kb. Plik ma: "+Math.round($("#fileinput_audio")[0].files[0].size/1024) + " kb. Przekonweruj plik na OGG Vorbis.";
 	}
 	
@@ -147,12 +187,17 @@ function validate()
 	else
 		return true;
 }
-function fillWithData(catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage)
+function fillCategoryWithData(id, PL, EN)
+{
+	
+}
+function fillWithData(id, catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage)
 {
 	if (errorMessage!=null)
 		log(errorMessage, true);
 	else 
 		log("", false);
+	$('#save_question').attr('name', id);
 	$('#cbCats').val(catIndex);
 	selectStars(diff);
 	$("input[name=type_radio_group][value=" + type + "]").prop('checked', true);
@@ -235,7 +280,7 @@ $(function() {
 
 	$("[name='edit']").on('click', function() {
 		if($(this).hasClass('selected')) {
-			deselect($(this));               
+			deselect($('.pop'));               
 		} else {
 			$(this).addClass('selected');
 			$('.pop').slideFadeToggle();
@@ -243,11 +288,10 @@ $(function() {
 		return false;
 	});
 	
-	$('.close').on('click', function() {
-		deselect($("[name='edit']"));
+	$('.close_config').on('click', function() {
+		deselect($('.pop'));
 		return false;
 	});
-	
 });
 
 $.fn.slideFadeToggle = function(easing, callback) {

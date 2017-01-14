@@ -8,4 +8,5 @@
 	$fileSizeMax = 64*1024;
 	$questionMaxLength = 160;
 	$answerMaxLength = 40;
+	$categoryMaxLength = 20;
 ?>

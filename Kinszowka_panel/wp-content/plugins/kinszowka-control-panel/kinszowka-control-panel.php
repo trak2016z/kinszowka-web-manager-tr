@@ -9,11 +9,10 @@
 	include_once( 'includes/kinszowka-control-panel-config.php');
 	include_once( 'includes/kinszowka-control-panel-utils.php' );
 	include_once( 'resources/kinszowka-control-panel-resources.php');
+
 	
-	
-	function load_popup_script()
-	{
-		global $fileSizeMax, $questionMaxLength, $answerMaxLength;
+	function load_popup_script(){
+		global $fileSizeMax, $questionMaxLength, $answerMaxLength, $categoryMaxLength;
 		
 		wp_register_script('popup-js',plugins_url( 'js/popup.js', __FILE__ ),array('jquery'));
 		wp_register_script('imgPreview-js',plugins_url( 'js/imgPreview.js', __FILE__ ),array('jquery'));
@@ -29,10 +28,13 @@
 		$wnm_custom = array( 
 		'star_path' => plugins_url( 'resources/star-icon.png', __FILE__ ),
 		'star_empty_path' => plugins_url( 'resources/star-empty-icon.png', __FILE__ ),
+		'plugins_path' => WP_PLUGIN_DIR,
 		'add_question_path' => plugins_url( 'includes/kinszowka-control-panel-add-question.php', __FILE__ ),
+		'delete_question_path' => plugins_url( 'includes/kinszowka-control-panel-delete-question.php', __FILE__ ),
 		'file_size_max' => $fileSizeMax,
 		'question_max_length' => $questionMaxLength,
-		'answer_max_length' => $answerMaxLength
+		'answer_max_length' => $answerMaxLength,
+		'category_max_length' => $categoryMaxLength
 		);
 		
 		wp_localize_script( 'popup-js', 'wnm_custom', $wnm_custom );
@@ -41,8 +43,7 @@
 	if (!has_action( 'wp_enqueue_scripts', 'load_popup_script' ))
 		add_action( 'wp_enqueue_scripts', 'load_popup_script' );
 	
-	function kinszowk_control_panel_get_questions()
-	{
+	function kinszowk_control_panel_get_questions(){
 		global $imageStarEmptyHTML, $fileSizeMax, $questionMaxLength, $answerMaxLength;
 		
 		//connecting to db
@@ -197,7 +198,7 @@
 			$catsOptions .= "<option value='".$catsRow['ID']."'>".$catsRow[$finalLanguage]."</option>";
 		
 		$html .="
-			<div class='messagepop pop'>
+			<div class='popquestionconfig pop'>
 				<div class='innermessage'>
 					<p class = 'header'>Konfigurator pytania</p>
 					<p>Meta dane:</p>
@@ -293,7 +294,7 @@
 					</table>
 					
 						<div id='save_error' style='float: left;'></div>
-						<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='commit' id='message_submit' onclick='handleSendClick();'/> lub <a class='close' href='#'>Anuluj</a></div>
+						<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='0' id='save_question' onclick='handleSendClick();'/> lub <a class='close_config' href='#'>Anuluj</a></div>
 					<p style='margin: 60px 0px 0px 0px;'></p>
 				</div>
 			</div>
@@ -351,8 +352,7 @@
 								JOIN questions_difficulty D ON Q.ID_DIFF = D.ID 
 								JOIN questions_types T ON Q.ID_TYPE = T.ID WHERE Q.ID = ".$showID.";");
 			if ($singleResultRow = mysql_fetch_array($SingleResult)) {
-				$singleResultsAnswer = mysql_query("SELECT A.PL, A.EN, A.CORRECT FROM questions_answer A
-													WHERE A.ID_QUESTIONS = ".$singleResultRow['ID']);
+				$singleResultsAnswer = mysql_query("SELECT A.PL, A.EN, A.CORRECT FROM questions_answer A WHERE A.ID_QUESTIONS = ".$singleResultRow['ID']." ORDER BY A.ID");
 				$singleAnswers = [
 					"PL" => [],
 					"EN" => [],
@@ -367,7 +367,8 @@
 					$index++;
 				}
 				
-				$html.= trim(preg_replace('/\s+/', ' '," <div name=\"edit\"><script>showPopup(
+				$html.= trim(preg_replace('/\s+/', ' '," <div name=\"edit\"><script>showQuestionConfig(
+				".$singleResultRow['ID'].", 
 				".$singleResultRow['CID'].", 
 				".$singleResultRow['DID'].", 
 				".$singleResultRow['TID'].", 
@@ -385,7 +386,7 @@
 		}
 		// building table
 		$html .=trim(preg_replace('/\s+/', ' ',"
-		<input type=\"button\" onclick=\"fillWithData(1,1,1,0,0,1,1,
+		<input type=\"button\" onclick=\"fillWithData(0,1,1,1,0,0,1,1,
 					{	
 						'PL': { 'Q': 'Pytanie', 'A': 'Odpowiedź A', 'B': 'Odpowiedź B', 'C': 'Odpowiedź C', 'D': 'Odpowiedź D' },
 						'EN': { 'Q': 'Question',  'A': 'Answer A', 'B': 'Answer B', 'C': 'Answer C', 'D': 'Answer D' }
@@ -486,6 +487,7 @@
 			if ($canManipulateThis)
 			{
 				$html .= trim(preg_replace('/\s+/', ' ',"<a href=\"#\" onclick=\"fillWithData(
+					".$row['ID'].", 
 					".$row['CID'].", 
 					".$row['DID'].", 
 					".$row['TID'].", 
@@ -499,7 +501,7 @@
 					}, 
 					".($row['DATA']!=null ? ("'".base64_encode($row['DATA'])."'") : "null")."
 					);\" name=\"edit\">" . $imageEditHTML . "</a> "));
-				$html .= $imageDeleteHTML;
+				$html .= "<a href=\"#\" onclick=\" handleDeleteClick(".$row['ID'].");\">" . $imageDeleteHTML . "</a> ";
 			}
 			
 			
@@ -525,4 +527,115 @@
 		$html .= "</div>";
 		return $html;
 	}
+
+	function kinszowk_control_panel_get_categories(){
+		global $imageEditHTML, $categoryMaxLength;
+		//connecting to db
+		$connectResult = db_connect();
+		if ($connectResult!==true)
+			return $connectResult;
+		
+		//roles
+		
+		$canList = have_role("subscriber") || have_role("author") || have_role("editor") || have_role("administrator");
+		$canManipulate = have_role("author") || have_role("editor") || have_role("administrator");
+		
+		if (!$canList)
+			return "Permission denied...";
+		
+		$limit = 10;
+		$page = 1;
+		
+		if (isset($_GET["pag"]) && is_numeric($_GET["pag"]))
+			$page = $_GET["pag"];
+		if (isset($_GET["limit"]) && is_numeric($_GET["limit"]))
+			$limit = $_GET["limit"];
+		
+		// calculations
+		$from = ($page-1)*$limit;
+		// category configurator
+		
+		$html .=trim(preg_replace('/\s+/', ' ',"
+		<input type=\"button\" onclick=\"fillCategoryWithData(0,'Kategoria', 'Category');\" name=\"edit\" value=\"Dodaj karegorię!\" />"));
+		$html .="
+			<link rel='stylesheet' type='text/css' href='".plugins_url( 'css/popup.css', __FILE__ )."'/>
+			<div class='popcategoryconfig pop'>
+				<div class='innermessage'>
+					<p class = 'header'>Konfigurator kategorii</p>
+					<p>Dane:</p>
+					<div>
+						PL: <input type='text' id='PL' size='".$categoryMaxLength."'> EN: <input type='text' id='EN' size='".$categoryMaxLength."'>
+					</div>
+					<p></p>
+					<div id='save_error' style='float: left;'></div>
+					<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='0' id='save_category' onclick='handleSendClick();'/> lub <a class='close_config' href='#'>Anuluj</a></div>
+					<p style='margin: 60px 0px 0px 0px;'></p>
+				</div>
+			</div>";
+		$html .="<table>
+        <thead>
+            <tr>
+                <td>L.p.</td>
+				<td>PL</td>
+				<td>EN</td>
+				<td>Liczba pytań</td>
+                <td>Średnia trudność</td>
+				<td>Akcje</td>
+            </tr>
+        </thead>
+        <tbody>";
+
+		$lp = $from+1;
+		$countResult =  mysql_query("SELECT COUNT(ID) C FROM questions");
+		$totalCount = mysql_fetch_array($countResult)['C'];
+		$maxPage = ceil((float)$totalCount/(float)$limit);
+		
+
+
+		$results = mysql_query("SELECT C.*, COUNT(Q.ID) COUNT , AVG(Q.ID_DIFF) AVG FROM `questions_cats` C 
+								JOIN questions Q ON Q.ID_CAT = C.ID
+								GROUP BY C.ID
+								ORDER BY C.ID DESC LIMIT ".$from.", ".$limit);
+
+        while($row = mysql_fetch_array($results)) {
+			$canManipulateThis = $canManipulate;
+			
+			$html .= "<tr>";
+			$html .= "<td>".$lp."</td>
+					  <td>".$row['PL']."</td>
+					  <td>".$row['EN']."</td>
+					  <td>".$row['COUNT']."</td>
+					  <td>".$row['AVG']."</td>
+					  <td>";
+					  if ($canManipulateThis)
+					  {
+						$html .= trim(preg_replace('/\s+/', ' ',"<a href=\"#\" onclick=\"fillCategoryWithData(
+							".$row['ID'].", 
+							".$row['PL'].", 
+							".$row['EN']."
+						);\" name=\"edit\">" . $imageEditHTML . "</a> "));
+					  }
+			$html .= "</td> </tr>";
+
+			$lp++;
+		}
+        $html .= "</tbody>
+				  </table><div name='page-setter' align='center'>";
+		if ($page>1)
+		{
+			$newGetBegine = $_GET; $newGetBegine['pag'] = 1;
+			$newGetBack = $_GET; $newGetBack['pag'] = $page-1;
+			$html .= "<a href='?".http_build_query($newGetBegine)."'>≤</a> <a href='?".http_build_query($newGetBack)."'><</a> ";
+		}
+		$html .= $page;
+		if ($page<$maxPage)
+		{
+			$newGetLast = $_GET; $newGetLast['pag'] = $maxPage;
+			$newGetNext = $_GET; $newGetNext['pag'] = $page+1;
+			$html .= " <a href='?".http_build_query($newGetNext)."'>></a> <a href='?".http_build_query($newGetLast)."'>≥</a>";
+		}
+		$html .= "</div>";
+		return $html;
+	}
+	
 ?>
