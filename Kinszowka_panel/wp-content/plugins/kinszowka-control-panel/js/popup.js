@@ -13,6 +13,62 @@ function showQuestionConfig(id, catIndex, diff, type, accepted, blocked, correct
 		fillWithData(id, catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage);
 	}
 }
+function showCategoryConfig(id, PL, EN, errorMessage) {
+	if($("[name='edit']").hasClass('selected')) {
+		deselect($('.pop'));               
+	} else {
+		$("[name='edit']").addClass('selected');
+		$('.pop').slideFadeToggle();
+		fillCategoryWithData(id, PL, EN, errorMessage);
+	}
+}
+function handleCategorClick()
+{
+	if (validateCategory())
+	{
+		$('#save_category').attr("disabled", true);
+		
+		var postScriptPath = wnm_custom.add_category_path;
+		var id = $('#save_category').attr('name');
+		var PL = $('#PL').val();
+		var EN = $('#EN').val();
+		
+		var fd = new FormData();
+		fd.append('ID', id);
+		fd.append('PL', PL);
+		fd.append('EN', EN);
+		
+		$.ajax({
+			type: 'POST',
+			url: postScriptPath,
+			data: fd,
+			processData: false,
+			contentType: false,
+			})
+			
+			.done(function( data ) {
+				var result = data.charAt(1);
+				log(data.substring(3), result==0);
+				
+			})
+			.fail(function( errorMessage) {
+				
+				log(errorMessage, true);
+			})
+			.always(function( data ) {
+				var result = data.charAt(1);
+				if (result==1)
+				{
+					var parameters = getUrlParameters();
+					parameters['showID'] = id;
+					var newQuery = buildUrlParameters(parameters);
+					setTimeout(function(){ location.href='?'+newQuery; }, 2000);
+				}
+				else
+					$('#save_category').attr("disabled", false);
+			});
+	}
+}
 function handleDeleteClick(id)
 {
 	if (confirm('Czy na pewno chcesz usunąć to pytanie [id: '+id+']?')) {
@@ -22,6 +78,28 @@ function handleDeleteClick(id)
 		$.ajax({
 			type: 'POST',
 			url: wnm_custom.delete_question_path,
+			data: fd,
+			processData: false,
+			contentType: false,
+			}).always(function( data ) {
+				var parameters = getUrlParameters();
+				parameters['showID'] = -1;
+				var newQuery = buildUrlParameters(parameters);
+				location.href='?'+newQuery;
+			});
+	} else {
+		// Do nothing!
+	}
+}
+function handleCategoryDeleteClick(id)
+{
+	if (confirm('Czy na pewno chcesz usunąć tę kategorię [id: '+id+']?')) {
+		var fd = new FormData();
+		fd.append('ID', id);
+		
+		$.ajax({
+			type: 'POST',
+			url: wnm_custom.delete_category_path,
 			data: fd,
 			processData: false,
 			contentType: false,
@@ -112,6 +190,30 @@ function handleSendClick()
 			});
 	}
 }
+function validateCategory()
+{
+	var id = $('#save_category').attr('name');
+	var error="";
+
+	var categoryMaxLength = wnm_custom.category_max_length;
+	
+	if ($('#PL').val().length==0)
+		error = "Nie podano nazwy kategorii dla PL.";
+	if ($('#EN').val().length==0)
+		error = "Nie podano nazwy kategorii dla EN.";
+	
+	if ($('#PL').val().length>categoryMaxLength)
+		error = "Nazwa kategorii dla PL została <br> przekroczona o " + ($('#PL').val().length - categoryMaxLength) + " (max " + categoryMaxLength + ")";
+	if ($('#EN').val().length>categoryMaxLength)
+		error = "Nazwa kategorii dla EN została <br> przekroczona o " + ($('#EN').val().length - categoryMaxLength) + " (max " + categoryMaxLength + ")";
+	if (error!="")
+	{
+		log(error, true);
+		return false;
+	}
+	else
+		return true;
+}
 function validate()
 {
 	var id = $('#save_question').attr('name');
@@ -187,9 +289,16 @@ function validate()
 	else
 		return true;
 }
-function fillCategoryWithData(id, PL, EN)
+function fillCategoryWithData(id, PL, EN, errorMessage)
 {
+	if (errorMessage!=null)
+		log(errorMessage, true);
+	else 
+		log("", false);
 	
+	$('#PL').val(PL);
+	$('#EN').val(EN);
+	$('#save_category').attr('name', id);
 }
 function fillWithData(id, catIndex, diff, type, accepted, blocked, correctAnswer, processing, languagesData, base64Data, errorMessage)
 {
@@ -273,7 +382,6 @@ function fillWithData(id, catIndex, diff, type, accepted, blocked, correctAnswer
 		$('#data_info').hide();
 		$('#data_error').hide();
 	}
-	
 }
 
 $(function() {

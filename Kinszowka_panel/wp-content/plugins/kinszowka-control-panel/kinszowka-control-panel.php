@@ -30,7 +30,9 @@
 		'star_empty_path' => plugins_url( 'resources/star-empty-icon.png', __FILE__ ),
 		'plugins_path' => WP_PLUGIN_DIR,
 		'add_question_path' => plugins_url( 'includes/kinszowka-control-panel-add-question.php', __FILE__ ),
+		'add_category_path' => plugins_url( 'includes/kinszowka-control-panel-add-category.php', __FILE__ ),
 		'delete_question_path' => plugins_url( 'includes/kinszowka-control-panel-delete-question.php', __FILE__ ),
+		'delete_category_path' => plugins_url( 'includes/kinszowka-control-panel-delete-category.php', __FILE__ ),
 		'file_size_max' => $fileSizeMax,
 		'question_max_length' => $questionMaxLength,
 		'answer_max_length' => $answerMaxLength,
@@ -513,15 +515,15 @@
 				  </table><div name='page-setter' align='center'>";
 		if ($page>1)
 		{
-			$newGetBegine = $_GET; $newGetBegine['pag'] = 1;
-			$newGetBack = $_GET; $newGetBack['pag'] = $page-1;
+			$newGetBegine = $_GET; $newGetBegine['pag'] = 1; unset($newGetBegine['showID']);
+			$newGetBack = $_GET; $newGetBack['pag'] = $page-1; unset($newGetBack['showID']);
 			$html .= "<a href='?".http_build_query($newGetBegine)."'>≤</a> <a href='?".http_build_query($newGetBack)."'><</a> ";
 		}
 		$html .= $page;
 		if ($page<$maxPage)
 		{
-			$newGetLast = $_GET; $newGetLast['pag'] = $maxPage;
-			$newGetNext = $_GET; $newGetNext['pag'] = $page+1;
+			$newGetLast = $_GET; $newGetLast['pag'] = $maxPage; unset($newGetLast['showID']);
+			$newGetNext = $_GET; $newGetNext['pag'] = $page+1; unset($newGetNext['showID']);
 			$html .= " <a href='?".http_build_query($newGetNext)."'>></a> <a href='?".http_build_query($newGetLast)."'>≥</a>";
 		}
 		$html .= "</div>";
@@ -529,7 +531,7 @@
 	}
 
 	function kinszowk_control_panel_get_categories(){
-		global $imageEditHTML, $categoryMaxLength;
+		global $imageEditHTML, $categoryMaxLength, $imageDeleteHTML;;
 		//connecting to db
 		$connectResult = db_connect();
 		if ($connectResult!==true)
@@ -545,16 +547,19 @@
 		
 		$limit = 10;
 		$page = 1;
-		
+		$showID = -1;
 		if (isset($_GET["pag"]) && is_numeric($_GET["pag"]))
 			$page = $_GET["pag"];
 		if (isset($_GET["limit"]) && is_numeric($_GET["limit"]))
 			$limit = $_GET["limit"];
-		
+		if (isset($_GET["showID"]) && is_numeric($_GET["showID"])){
+			$showID = $_GET["showID"];
+			if ($showID<-1)
+				$showID = -1;
+		}
 		// calculations
 		$from = ($page-1)*$limit;
 		// category configurator
-		
 		$html .=trim(preg_replace('/\s+/', ' ',"
 		<input type=\"button\" onclick=\"fillCategoryWithData(0,'Kategoria', 'Category');\" name=\"edit\" value=\"Dodaj karegorię!\" />"));
 		$html .="
@@ -564,14 +569,28 @@
 					<p class = 'header'>Konfigurator kategorii</p>
 					<p>Dane:</p>
 					<div>
-						PL: <input type='text' id='PL' size='".$categoryMaxLength."'> EN: <input type='text' id='EN' size='".$categoryMaxLength."'>
+						PL: <input type='text' id='PL' maxlength='".$categoryMaxLength."'> EN: <input type='text' id='EN' maxlength='".$categoryMaxLength."'>
 					</div>
 					<p></p>
 					<div id='save_error' style='float: left;'></div>
-					<div style='float: right;'><input style='margin: -10px 0px 0px 0px;' type='submit' value='Zapisz!' name='0' id='save_category' onclick='handleSendClick();'/> lub <a class='close_config' href='#'>Anuluj</a></div>
+					<div style='float: right;'><input type='submit' value='Zapisz!' name='0' id='save_category' onclick='handleCategorClick();'/> lub <a class='close_config' href='#'>Anuluj</a></div>
 					<p style='margin: 60px 0px 0px 0px;'></p>
 				</div>
 			</div>";
+			
+		if ($showID>=0)
+		{
+			if ($showID == 0)
+				$showID = "(SELECT MAX(C1.ID) FROM questions_cats C1)";
+			$SingleResult = mysql_query("SELECT C.* FROM `questions_cats` C WHERE C.ID = ".$showID." ORDER BY C.ID");
+			if ($singleResultRow = mysql_fetch_array($SingleResult)) {
+				$html .= trim(preg_replace('/\s+/', ' ',"<div name=\"edit\"><script>showCategoryConfig(
+							".$singleResultRow['ID'].", 
+							'".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $singleResultRow['PL']))))."', 
+							'".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $singleResultRow['EN']))))."'
+						);</script></div>"));
+			}
+		}
 		$html .="<table>
         <thead>
             <tr>
@@ -586,14 +605,14 @@
         <tbody>";
 
 		$lp = $from+1;
-		$countResult =  mysql_query("SELECT COUNT(ID) C FROM questions");
+		$countResult =  mysql_query("SELECT COUNT(ID) C FROM questions_cats");
 		$totalCount = mysql_fetch_array($countResult)['C'];
 		$maxPage = ceil((float)$totalCount/(float)$limit);
 		
 
 
 		$results = mysql_query("SELECT C.*, COUNT(Q.ID) COUNT , AVG(Q.ID_DIFF) AVG FROM `questions_cats` C 
-								JOIN questions Q ON Q.ID_CAT = C.ID
+								LEFT JOIN questions Q ON Q.ID_CAT = C.ID
 								GROUP BY C.ID
 								ORDER BY C.ID DESC LIMIT ".$from.", ".$limit);
 
@@ -605,15 +624,17 @@
 					  <td>".$row['PL']."</td>
 					  <td>".$row['EN']."</td>
 					  <td>".$row['COUNT']."</td>
-					  <td>".$row['AVG']."</td>
+					  <td>".($row['AVG']==''? '0.0000' : $row['AVG'])."</td>
 					  <td>";
 					  if ($canManipulateThis)
 					  {
 						$html .= trim(preg_replace('/\s+/', ' ',"<a href=\"#\" onclick=\"fillCategoryWithData(
 							".$row['ID'].", 
-							".$row['PL'].", 
-							".$row['EN']."
+							'".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['PL']))))."', 
+							'".addslashes(htmlspecialchars(trim(preg_replace('/\s+/', ' ', $row['EN']))))."'
 						);\" name=\"edit\">" . $imageEditHTML . "</a> "));
+						if ($row['COUNT']==0)
+							$html .= "<a href=\"#\" onclick=\" handleCategoryDeleteClick(".$row['ID'].");\">" . $imageDeleteHTML . "</a> ";
 					  }
 			$html .= "</td> </tr>";
 
@@ -623,15 +644,15 @@
 				  </table><div name='page-setter' align='center'>";
 		if ($page>1)
 		{
-			$newGetBegine = $_GET; $newGetBegine['pag'] = 1;
-			$newGetBack = $_GET; $newGetBack['pag'] = $page-1;
+			$newGetBegine = $_GET; $newGetBegine['pag'] = 1; unset($newGetBegine['showID']);
+			$newGetBack = $_GET; $newGetBack['pag'] = $page-1; unset($newGetBack['showID']);
 			$html .= "<a href='?".http_build_query($newGetBegine)."'>≤</a> <a href='?".http_build_query($newGetBack)."'><</a> ";
 		}
 		$html .= $page;
 		if ($page<$maxPage)
 		{
-			$newGetLast = $_GET; $newGetLast['pag'] = $maxPage;
-			$newGetNext = $_GET; $newGetNext['pag'] = $page+1;
+			$newGetLast = $_GET; $newGetLast['pag'] = $maxPage; unset($newGetLast['showID']);
+			$newGetNext = $_GET; $newGetNext['pag'] = $page+1; unset($newGetNext['showID']);
 			$html .= " <a href='?".http_build_query($newGetNext)."'>></a> <a href='?".http_build_query($newGetLast)."'>≥</a>";
 		}
 		$html .= "</div>";
