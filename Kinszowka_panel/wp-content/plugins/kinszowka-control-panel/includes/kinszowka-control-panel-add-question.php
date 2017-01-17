@@ -31,7 +31,7 @@
 	{
 		global $db_host,$db_login, $db_password, $db_name, $db_charset;
 		global $_POST, $_FILES;
-		if ($_POST["typeID"]==2 || $_POST["typeID"]==3 && isset($_FILES["data"]))
+		if (($_POST["typeID"]==2 || $_POST["typeID"]==3) && isset($_FILES["data"]))
 		{
 			$fileName = $_FILES['data']['name'];
 			$tmpName  = $_FILES['data']['tmp_name'];
@@ -175,7 +175,7 @@
 			return "Wybrana kategoria nie istnieje!";
 		if (is_numeric($_POST["blocked"]) && $_POST["blocked"] != 0 && $_POST["blocked"] != 1)
 			$_POST["blocked"] = 0;
-		if (is_numeric($_POST["accepted"]) && $_POST["accepted"] != 0 && $_POST["accepted"] != 1)
+		if (!is_numeric($_POST["accepted"]) || (is_numeric($_POST["accepted"]) && $_POST["accepted"] != 0 && $_POST["accepted"] != 1))
 			$_POST["accepted"] = 0;
 		if (is_numeric($_POST["diffID"]) && $_POST["diffID"] <= 0 || $_POST["diffID"] > 4)
 			return "Wybrany pozion trudności nie istnieje!"; 

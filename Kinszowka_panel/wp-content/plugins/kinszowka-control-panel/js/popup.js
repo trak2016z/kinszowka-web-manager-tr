@@ -489,6 +489,8 @@ $("document").ready(function(){
 			var file = this.files[0];
 			if (file.size>wnm_custom.file_size_max)
 				$("#upload_error").text("Plik jest za duży!");
+			else
+				$("#upload_error").text("");
 		}
 		else
 			$("#upload_error").text("");
@@ -499,6 +501,8 @@ $("document").ready(function(){
 			var file = this.files[0];
 			if (file.size>wnm_custom.file_size_max)
 				$("#upload_error").text("Plik jest za duży!");
+			else
+				$("#upload_error").text("");
 		}
 		else
 			$("#upload_error").text("");
